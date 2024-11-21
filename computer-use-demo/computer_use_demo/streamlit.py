@@ -4,6 +4,7 @@ Entrypoint for streamlit, see https://docs.streamlit.io/
 
 import asyncio
 import base64
+import logging
 import os
 import subprocess
 import traceback
@@ -15,11 +16,14 @@ from typing import cast
 
 import httpx
 import streamlit as st
+import uvicorn
 from anthropic import RateLimitError
 from anthropic.types.beta import (
     BetaContentBlockParam,
     BetaTextBlockParam,
 )
+from fastapi import FastAPI
+from pydantic import BaseModel
 from streamlit.delta_generator import DeltaGenerator
 
 from computer_use_demo.loop import (
@@ -29,6 +33,9 @@ from computer_use_demo.loop import (
 )
 from computer_use_demo.tools import ToolResult
 
+app = FastAPI()
+logger = logging.getLogger(__name__)
+messages = []
 CONFIG_DIR = PosixPath("~/.anthropic").expanduser()
 API_KEY_FILE = CONFIG_DIR / "api_key"
 STREAMLIT_STYLE = """
@@ -380,5 +387,59 @@ def _render_message(
             st.markdown(message)
 
 
+class ComputerUseMessage(BaseModel):
+    text: str
+
+
+@app.post("/send_message")
+async def send_message(message: ComputerUseMessage):
+    logger.info(f"Received message: {message}")
+    messages.append(
+        {
+            "role": Sender.USER,
+            "content": [BetaTextBlockParam(type="text", text=message.text)],
+        }
+    )
+    await sampling_loop(
+        system_prompt_suffix="",
+        model="claude-3-5-sonnet-20241022",
+        provider=APIProvider.ANTHROPIC,
+        messages=messages,
+        output_callback=lambda x: None,
+        tool_output_callback=lambda x, y: None,
+        api_response_callback=lambda x, y, z: None,
+        api_key="sk-ant-lzYHF2_R2RPOupp0lrFJm_Amtqqz9AaclaeS99CttE-PlR92PRE0pqW6ENQQAUtBddx_KCHyxgfESYBnKrOhqA",
+        only_n_most_recent_images=10,
+    )
+    return {"status": "success"}
+
+
+async def run_fastapi():
+    """Run FastAPI server"""
+    config = uvicorn.Config(app, host="0.0.0.0", port=8111, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+    logger.info("FastAPI server started")
+
+
+async def run_app():
+    """Run both FastAPI and Streamlit with background tasks"""
+    logger.info("Starting app")
+    try:
+        # Create tasks for FastAPI, update checker, and Streamlit
+        api_task = asyncio.create_task(run_fastapi())
+        streamlit_task = asyncio.create_task(main())
+
+        # Wait for all tasks
+        await asyncio.gather(api_task, streamlit_task)
+    except Exception as e:
+        logger.error(f"Error in run_app: {e}")
+        raise
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Run everything
+    asyncio.run(run_app())
+
+# if __name__ == "__main__":
+#     asyncio.run(main=main())
