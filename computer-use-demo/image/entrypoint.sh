@@ -11,5 +11,8 @@ STREAMLIT_SERVER_PORT=8501 python -m streamlit run computer_use_demo/streamlit.p
 echo "✨ Computer Use Demo is ready!"
 echo "➡️  Open http://localhost:8080 in your browser to begin"
 
+# Start FastAPI server
+FASTAPI_PORT=8111 LOG_LEVEL=info python -m uvicorn computer_use_demo.api_server:app --host 0.0.0.0 --port 8111
+
 # Keep the container running
 tail -f /dev/null
