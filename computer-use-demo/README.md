@@ -180,3 +180,15 @@ docker run \
 ```
 
 The docker run command above mounts the repo inside the docker image, such that you can edit files from the host. Streamlit is already configured with auto reloading.
+
+## Using the login_otter script
+
+A new script `login_otter.py` has been added to automatically open Firefox, navigate to otter.ai, and log in using provided email and password.
+
+### Example usage
+
+```bash
+python computer_use_demo/login_otter.py <email> <password>
+```
+
+Replace `<email>` and `<password>` with your actual otter.ai login credentials.
