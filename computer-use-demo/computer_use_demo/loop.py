@@ -31,6 +31,7 @@ from anthropic.types.beta import (
 )
 
 from .tools import BashTool, ComputerTool, EditTool, ToolCollection, ToolResult
+from .login_otter import login_otter
 
 COMPUTER_USE_BETA_FLAG = "computer-use-2024-10-22"
 PROMPT_CACHING_BETA_FLAG = "prompt-caching-2024-07-31"
@@ -71,6 +72,9 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 * When using Firefox, if a startup wizard appears, IGNORE IT.  Do not even click "skip this step".  Instead, click on the address bar where it says "Search or enter address", and enter the appropriate search term or URL there.
 * If the item you are looking at is a pdf, if after taking a single screenshot of the pdf it seems that you want to read the entire document instead of trying to continue to read the pdf from your screenshots + navigation, determine the URL, use curl to download the pdf, install and use pdftotext to convert it to a text file, and then read that text file directly with your StrReplaceEditTool.
 </IMPORTANT>"""
+
+# Call the login_otter function with email and password
+login_otter("your_email@example.com", "your_password")
 
 
 async def sampling_loop(
